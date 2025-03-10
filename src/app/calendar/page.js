@@ -7,6 +7,12 @@ import Cookies from "js-cookie";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import supabase from "../../../utils/supabase";
+import { PlusIcon, ArrowUpIcon } from "@heroicons/react/24/solid";
+import { ClipboardDocumentListIcon } from "@heroicons/react/24/outline";
+import { CalendarIcon } from "@heroicons/react/24/outline";
+import { Doto } from "next/font/google";
+
+const doto = Doto({ subsets: ["latin"] });
 
 export default function CalendarPage() {
     const { user } = useAuth();
@@ -16,6 +22,7 @@ export default function CalendarPage() {
     const [showInput, setShowInput] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [notesForSelectedDate, setNotesForSelectedDate] = useState([]);
+    const [category, setCategory] = useState(1); // Default category: 1 (Work)
 
     useEffect(() => {
         const tokenData = Cookies.get("supabase-auth-token");
@@ -42,7 +49,7 @@ export default function CalendarPage() {
         if (user) {
             fetchNotes();
         }
-    }, [user]);
+    }, [user, category]);
 
     async function fetchNotes() {
         const tokenData = Cookies.get("supabase-auth-token");
@@ -52,36 +59,35 @@ export default function CalendarPage() {
             return;
         }
 
-        const response = await fetch("/api/tasks", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: user?.id,
-            }),
-        });
-
+        const url = "/api/tasks?email=" + user?.email + "&category=" + category;
+        const response = await fetch(url);
         const data = await response.json();
 
         if (!response.ok) {
-            alert("Error fetching notes", data.error);
+            alert("Error fetching notes: " + data.error);
             return;
         }
 
         setNotes(data);
+        filterNotesForSelectedDate(data);
+    }
+
+    function filterNotesForSelectedDate(notes) {
+        const filteredNotes = notes.filter((note) => {
+            const noteDate = new Date(note.due_date);
+            return (
+                noteDate.getFullYear() === selectedDate.getFullYear() &&
+                noteDate.getMonth() === selectedDate.getMonth() &&
+                noteDate.getDate() === selectedDate.getDate()
+            );
+        });
+
+        setNotesForSelectedDate(filteredNotes);
     }
 
     function handleDateSelect(date) {
         setSelectedDate(date);
-
-        const filteredNotes = notes.filter((note) => {
-            const noteDate = new Date(note.due_date);
-            return (
-                noteDate.getFullYear() === date.getFullYear() &&
-                noteDate.getMonth() === date.getMonth() &&
-                noteDate.getDate() === date.getDate()
-            );
-        });
-        setNotesForSelectedDate(filteredNotes);
+        filterNotesForSelectedDate(notes);
     }
 
     async function handleAddNote() {
@@ -112,38 +118,59 @@ export default function CalendarPage() {
         }
     }
 
+    function handleChangeCategory(num) {
+        setCategory(num);
+    }
+
     return (
-        <div style={{ padding: "16px", paddingBottom: "80px" }}>
-            <h3>Calendario</h3>
-            <div>
-                <Calendar onChange={handleDateSelect} value={selectedDate} />
+        <div className="relative bg-[#151416] min-h-screen pt-20 pb-20">
+            <h3
+                className={`text-[#E8EAEE] text-3xl text-center ${doto.className}`}
+            >
+                Calendario
+            </h3>
+
+            {/* Category Selection Buttons */}
+            <div className="fixed top-0 left-0 right-0 bg-[#151416] z-10 p-4 flex gap-4 justify-between">
+                {["All", "Work", "Personal"].map((label, index) => {
+                    const categoryNumber = index + 1;
+                    return (
+                        <button
+                            key={label}
+                            onClick={() => handleChangeCategory(categoryNumber)}
+                            className={`flex-1 px-6 py-2 rounded-full text-[#E8EAEE] ${
+                                category === categoryNumber
+                                    ? "bg-[#CD0E14]"
+                                    : "bg-[#86898C] hover:bg-[#A6A9AB]"
+                            }`}
+                        >
+                            {label}
+                        </button>
+                    );
+                })}
             </div>
 
-            <div style={{ marginTop: "20px" }}>
-                <h4>Notas para {selectedDate.toLocaleDateString()}</h4>
-                <ul
-                    style={{
-                        marginBottom: "16px",
-                        listStyle: "none",
-                        padding: 0,
-                    }}
-                >
+            <div className="mt-8 flex justify-center">
+                <Calendar
+                    onChange={handleDateSelect}
+                    value={selectedDate}
+                    className="bg-[#151416] text-[#E8EAEE] border border-[#86898C] rounded-lg p-4"
+                />
+            </div>
+
+            <div className="mt-6">
+                <h4 className="text-[#E8EAEE] text-xl text-center">
+                    Notas para {selectedDate.toLocaleDateString()}
+                </h4>
+                <ul className="p-4">
                     {notesForSelectedDate.map((note) => (
                         <li
                             key={note.id}
-                            style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                backgroundColor: "#F5F5F5",
-                                padding: "8px",
-                                borderRadius: "4px",
-                                marginBottom: "8px",
-                            }}
+                            className="flex items-center bg-[#E8EAEE] p-4 rounded-full mb-2 shadow-md"
                         >
-                            <div>
+                            <div className="flex-1">
                                 <p>{note.text}</p>
-                                <small style={{ color: "#757575" }}>
+                                <small className="text-[#757575]">
                                     {new Date(
                                         note.due_date
                                     ).toLocaleDateString()}
@@ -154,88 +181,46 @@ export default function CalendarPage() {
                 </ul>
 
                 {showInput && (
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px",
-                        }}
-                    >
+                    <div className="fixed left-1/2 transform -translate-x-1/2 top-1/4 w-11/12 max-w-md bg-[#776E6A] p-6 rounded-lg shadow-lg z-20">
                         <textarea
-                            style={{
-                                border: "1px solid #ccc",
-                                borderRadius: "4px",
-                                padding: "8px",
-                                resize: "none",
-                            }}
+                            className="w-full bg-[#E8EAEE] p-4 rounded-lg resize-none"
                             value={newNote}
                             onChange={(e) => setNewNote(e.target.value)}
+                            placeholder="Escribe tu nota..."
                         />
                         <button
-                            style={{
-                                backgroundColor: "#28A745",
-                                color: "white",
-                                padding: "8px 16px",
-                                borderRadius: "4px",
-                                border: "none",
-                                cursor: "pointer",
-                            }}
                             onClick={handleAddNote}
+                            className="mt-4 bg-[#CD0E14] text-[#E8EAEE] w-16 h-16 flex items-center justify-center rounded-full shadow-lg focus:outline-none mx-auto"
                         >
-                            Guardar Nota
+                            <ArrowUpIcon className="w-8 h-8" />
                         </button>
                     </div>
                 )}
+
                 {!showInput && (
                     <button
-                        style={{
-                            backgroundColor: "#007BFF",
-                            color: "white",
-                            padding: "8px 16px",
-                            borderRadius: "4px",
-                            border: "none",
-                            cursor: "pointer",
-                        }}
                         onClick={() => setShowInput(true)}
+                        className="fixed bottom-24 right-6 bg-[#CD0E14] text-[#E8EAEE] w-16 h-16 flex items-center justify-center rounded-full shadow-lg focus:outline-none z-20"
                     >
-                        Agregar Nota
+                        <PlusIcon className="w-8 h-8" />
                     </button>
                 )}
             </div>
 
-            <div
-                style={{
-                    position: "fixed",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: "60px",
-                    backgroundColor: "#f0f0f0",
-                    display: "flex",
-                    justifyContent: "space-around",
-                    alignItems: "center",
-                    borderTop: "1px solid #ccc",
-                }}
-            >
+            <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#151416] flex justify-around items-center rounded-t-lg z-10">
                 <button
-                    style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                    }}
                     onClick={() => router.push("/tasks")}
+                    className="flex flex-col items-center"
                 >
-                    Tareas
+                    <ClipboardDocumentListIcon className="w-8 h-8 text-[#E8EAEE]" />
+                    <span className="text-[#E8EAEE] text-sm">Tasks</span>
                 </button>
                 <button
-                    style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                    }}
                     onClick={() => router.push("/calendar")}
+                    className="flex flex-col items-center"
                 >
-                    Calendario
+                    <CalendarIcon className="w-8 h-8 text-[#CD0E14]" />
+                    <span className="text-[#CD0E14] text-sm">Calendar</span>
                 </button>
             </div>
         </div>
