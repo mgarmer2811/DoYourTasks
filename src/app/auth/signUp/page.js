@@ -9,6 +9,9 @@ import {
     EnvelopeIcon,
 } from "@heroicons/react/24/solid";
 import useAuth from "../authContext";
+import { Doto } from "next/font/google";
+
+const doto = Doto({ subsets: ["latin"] });
 
 export default function SignUp() {
     const [email, setEmail] = useState("");
@@ -55,7 +58,9 @@ export default function SignUp() {
     return (
         <div className="flex justify-center items-center min-h-screen bg-[#151416]">
             <div className="w-96 p-8 rounded-3xl bg-[#2c2b2e] shadow-2xl">
-                <h1 className="text-4xl font-bold text-[#E8EAEE] text-center uppercase">
+                <h1
+                    className={`text-4xl font-bold text-[#E8EAEE] text-center uppercase ${doto.className}`}
+                >
                     DoYourTasks
                 </h1>
                 <hr className="my-4 border-[#E8EAEE]" />
@@ -110,7 +115,7 @@ export default function SignUp() {
 
                     <button
                         type="submit"
-                        className="w-full p-3 rounded-full bg-[#cd0e14] text-[#E8EAEE] font-bold"
+                        className={`w-full p-3 rounded-full bg-[#cd0e14] text-[#E8EAEE] text-xl font-bold ${doto.className}`}
                     >
                         SIGN UP
                     </button>
