@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import useAuth from "../auth/authContext";
 import Cookies from "js-cookie";
@@ -24,6 +24,8 @@ export default function CalendarPage() {
     const [notesForSelectedDate, setNotesForSelectedDate] = useState([]);
     const [category, setCategory] = useState(1);
 
+    const textareaRef = useRef(null);
+
     useEffect(() => {
         const tokenData = Cookies.get("supabase-auth-token");
         if (!user && !tokenData) {
@@ -36,6 +38,8 @@ export default function CalendarPage() {
                     .then(({ data }) => {
                         if (!data.session) {
                             router.push("/auth/signIn");
+                        } else {
+                            fetchNotes(1);
                         }
                     });
             } catch (error) {
@@ -46,12 +50,20 @@ export default function CalendarPage() {
     }, []);
 
     useEffect(() => {
-        if (user) {
-            fetchNotes();
-        }
-    }, [user, category]);
+        fetchNotes();
+    }, [category]);
 
-    async function fetchNotes() {
+    useEffect(() => {
+        if (showInput && textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    }, [showInput]);
+
+    useEffect(() => {
+        filterNotesForSelectedDate(notes, selectedDate);
+    }, [selectedDate, notes]);
+
+    async function fetchNotes(cat = category) {
         const tokenData = Cookies.get("supabase-auth-token");
 
         if (!user && !tokenData) {
@@ -59,7 +71,7 @@ export default function CalendarPage() {
             return;
         }
 
-        const url = "/api/tasks?email=" + user?.email + "&category=" + category;
+        const url = "/api/tasks?email=" + user?.email + "&category=" + cat;
         const response = await fetch(url);
         const data = await response.json();
 
@@ -69,25 +81,22 @@ export default function CalendarPage() {
         }
 
         setNotes(data);
-        filterNotesForSelectedDate(data);
     }
 
-    function filterNotesForSelectedDate(notes) {
+    function filterNotesForSelectedDate(notes, date) {
         const filteredNotes = notes.filter((note) => {
             const noteDate = new Date(note.due_date);
             return (
-                noteDate.getFullYear() === selectedDate.getFullYear() &&
-                noteDate.getMonth() === selectedDate.getMonth() &&
-                noteDate.getDate() === selectedDate.getDate()
+                noteDate.getFullYear() === date.getFullYear() &&
+                noteDate.getMonth() === date.getMonth() &&
+                noteDate.getDate() === date.getDate()
             );
         });
-
         setNotesForSelectedDate(filteredNotes);
     }
 
     function handleDateSelect(date) {
         setSelectedDate(date);
-        filterNotesForSelectedDate(notes);
     }
 
     async function handleAddNote() {
@@ -183,6 +192,7 @@ export default function CalendarPage() {
             {showInput && (
                 <div className="fixed left-1/2 transform -translate-x-1/2 top-1/4 w-11/12 max-w-md bg-[#776E6A] p-6 rounded-lg shadow-lg z-20">
                     <textarea
+                        ref={textareaRef}
                         className="w-full bg-[#E8EAEE] p-4 rounded-lg resize-none"
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
