@@ -22,7 +22,7 @@ export default function CalendarPage() {
     const [showInput, setShowInput] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [notesForSelectedDate, setNotesForSelectedDate] = useState([]);
-    const [category, setCategory] = useState(1); // Default category: 1 (Work)
+    const [category, setCategory] = useState(1);
 
     useEffect(() => {
         const tokenData = Cookies.get("supabase-auth-token");
@@ -99,7 +99,7 @@ export default function CalendarPage() {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                user_id: user?.id,
+                user_email: user?.email,
                 text: newNote,
                 category: category,
                 due_date: selectedDate.toISOString(),
@@ -123,14 +123,13 @@ export default function CalendarPage() {
     }
 
     return (
-        <div className="relative bg-[#151416] min-h-screen pt-20 pb-20">
+        <div className="relative bg-[#151416] min-h-screen flex flex-col pt-20">
             <h3
                 className={`text-[#E8EAEE] text-3xl text-center ${doto.className}`}
             >
                 Calendario
             </h3>
 
-            {/* Category Selection Buttons */}
             <div className="fixed top-0 left-0 right-0 bg-[#151416] z-10 p-4 flex gap-4 justify-between">
                 {["All", "Work", "Personal"].map((label, index) => {
                     const categoryNumber = index + 1;
@@ -150,7 +149,7 @@ export default function CalendarPage() {
                 })}
             </div>
 
-            <div className="mt-8 flex justify-center">
+            <div className="mt-20 flex justify-center">
                 <Calendar
                     onChange={handleDateSelect}
                     value={selectedDate}
@@ -158,7 +157,7 @@ export default function CalendarPage() {
                 />
             </div>
 
-            <div className="mt-6">
+            <div className="flex-1 overflow-y-auto mt-6 mb-20">
                 <h4 className="text-[#E8EAEE] text-xl text-center">
                     Notas para {selectedDate.toLocaleDateString()}
                 </h4>
@@ -179,33 +178,33 @@ export default function CalendarPage() {
                         </li>
                     ))}
                 </ul>
-
-                {showInput && (
-                    <div className="fixed left-1/2 transform -translate-x-1/2 top-1/4 w-11/12 max-w-md bg-[#776E6A] p-6 rounded-lg shadow-lg z-20">
-                        <textarea
-                            className="w-full bg-[#E8EAEE] p-4 rounded-lg resize-none"
-                            value={newNote}
-                            onChange={(e) => setNewNote(e.target.value)}
-                            placeholder="Escribe tu nota..."
-                        />
-                        <button
-                            onClick={handleAddNote}
-                            className="mt-4 bg-[#CD0E14] text-[#E8EAEE] w-16 h-16 flex items-center justify-center rounded-full shadow-lg focus:outline-none mx-auto"
-                        >
-                            <ArrowUpIcon className="w-8 h-8" />
-                        </button>
-                    </div>
-                )}
-
-                {!showInput && (
-                    <button
-                        onClick={() => setShowInput(true)}
-                        className="fixed bottom-24 right-6 bg-[#CD0E14] text-[#E8EAEE] w-16 h-16 flex items-center justify-center rounded-full shadow-lg focus:outline-none z-20"
-                    >
-                        <PlusIcon className="w-8 h-8" />
-                    </button>
-                )}
             </div>
+
+            {showInput && (
+                <div className="fixed left-1/2 transform -translate-x-1/2 top-1/4 w-11/12 max-w-md bg-[#776E6A] p-6 rounded-lg shadow-lg z-20">
+                    <textarea
+                        className="w-full bg-[#E8EAEE] p-4 rounded-lg resize-none"
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        placeholder="Escribe tu nota..."
+                    />
+                    <button
+                        onClick={handleAddNote}
+                        className="mt-4 bg-[#CD0E14] text-[#E8EAEE] w-16 h-16 flex items-center justify-center rounded-full shadow-lg focus:outline-none mx-auto"
+                    >
+                        <ArrowUpIcon className="w-8 h-8" />
+                    </button>
+                </div>
+            )}
+
+            {!showInput && (
+                <button
+                    onClick={() => setShowInput(true)}
+                    className="fixed bottom-24 right-6 bg-[#CD0E14] text-[#E8EAEE] w-16 h-16 flex items-center justify-center rounded-full shadow-lg focus:outline-none z-20"
+                >
+                    <PlusIcon className="w-8 h-8" />
+                </button>
+            )}
 
             <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#151416] flex justify-around items-center rounded-t-lg z-10">
                 <button
